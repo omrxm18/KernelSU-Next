@@ -628,8 +628,10 @@ void ksu_handle_sys_read(unsigned int fd)
      * lifetime of the boot; stop_init_rc_hook() flips this flag so the
      * proxy can be torn down again.
      */
+#ifndef KSU_KPROBES_HOOK
     if (likely(!ksu_init_rc_hook))
         return;
+#endif
 
     file = fget(fd);
     if (!file) return;
@@ -941,9 +943,10 @@ int __maybe_unused ksu_handle_vfs_read(struct file **file_ptr, char __user **buf
                 size_t *count_ptr, loff_t **pos)
 {
     struct file *file = *file_ptr;
-
+#ifndef KSU_KPROBES_HOOK
     if (likely(!ksu_init_rc_hook))
         return 0;
+#endif
 
     if (IS_ERR_OR_NULL(file)) return 0;
 
