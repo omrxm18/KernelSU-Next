@@ -117,6 +117,14 @@ extern long strncpy_from_user_nofault(char *dst, const void __user *unsafe_addr,
 				   long count);
 #endif // #ifndef KSU_OPTIONAL_STRNCPY
 
+#ifndef preempt_enable_no_resched_notrace
+#define preempt_enable_no_resched_notrace() \
+do { \
+	barrier(); \
+	__preempt_count_dec(); \
+} while (0)
+#endif
+
 // Linux >= 5.7
 // task_work_add (struct, struct, enum)
 // Linux pre-5.7
