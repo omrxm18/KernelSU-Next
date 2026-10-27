@@ -2,14 +2,16 @@
 set -eu
 
 GKI_ROOT=$(pwd)
-OWNER="KernelSU-Next"
-REPO="$OWNER"
+OWNER="omrxm18"
+REPO="KernelSU-Next"
+URL="https://github.com/$OWNER/$REPO"
 
 display_usage() {
     echo "Usage: $0 [--cleanup | <commit-or-tag>]"
     echo "  --cleanup:              Cleans up previous modifications made by the script."
     echo "  <commit-or-tag>:        Sets up or updates the KernelSU-Next to specified tag or commit."
     echo "  -h, --help:             Displays this usage information."
+    echo "  -d                      use the alternate mirror instead of github"
     echo "  (no args):              Sets up or updates the KernelSU-Next environment to the latest tagged version."
 }
 
@@ -41,7 +43,7 @@ perform_cleanup() {
 # Sets up or update KernelSU-Next environment
 setup_kernelsu() {
     echo "[+] Setting up $REPO..."
-    test -d "$GKI_ROOT/$REPO" || git clone "https://github.com/$OWNER/$REPO" && echo "[+] Repository cloned."
+    test -d "$GKI_ROOT/$REPO" || git clone "$URL" && echo "[+] Repository cloned."
     cd "$GKI_ROOT/$REPO"
     git stash && echo "[-] Stashed current changes."
 
@@ -74,6 +76,8 @@ elif [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
 elif [ "$1" = "--cleanup" ]; then
     initialize_variables
     perform_cleanup
+elif [ "$1" = "-d" ]; then
+    URL="https://git.x01.dpdns.org/$REPO.git"
 else
     initialize_variables
     setup_kernelsu "$@"
