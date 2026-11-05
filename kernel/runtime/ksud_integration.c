@@ -41,6 +41,7 @@
 #include "ksu.h"
 #include "ksud.h"
 #include "ksud_boot.h"
+#include "preinit/prinit.h"
 #include "feature/selinux_hide.h"
 #include "selinux/selinux.h"
 #include "policy/feature.h"
@@ -69,7 +70,8 @@ static const char KERNEL_SU_RC[] =
 
 	"\n";
 
-// Prefer /metadata/watchdog/ when present, else /metadata.
+// Prefer /metadata/vold, else /metadata/watchdog, else /metadata.
+#define MODULE_RC_PATH_VOLD "/metadata/vold/ksu/modules.rc"
 #define MODULE_RC_PATH_WATCHDOG "/metadata/watchdog/ksu/modules.rc"
 #define MODULE_RC_PATH_DEFAULT "/metadata/ksu/modules.rc"
 static char *module_rc_buf;
@@ -78,7 +80,12 @@ static ssize_t module_rc_pos;
 
 static struct file *open_module_rc(const char **chosen_path)
 {
-	struct file *f = filp_open(MODULE_RC_PATH_WATCHDOG, O_RDONLY, 0);
+    struct file *f = filp_open(MODULE_RC_PATH_VOLD, O_RDONLY, 0);
+    if (!IS_ERR(f)) {
+        *chosen_path = MODULE_RC_PATH_VOLD;
+        return f;
+    }
+    f = filp_open(MODULE_RC_PATH_WATCHDOG, O_RDONLY, 0);
 	if (!IS_ERR(f)) {
 		*chosen_path = MODULE_RC_PATH_WATCHDOG;
 		return f;
@@ -268,6 +275,7 @@ static bool check_argv(struct user_arg_ptr argv, int index,
 
 static void ksu_initialize_selinux_tw_func(struct callback_head *cb)
 {
+    ksu_preinit_release();
 	ksu_selinux_hide_handle_second_stage();
 	apply_kernelsu_rules();
 	ksu_feature_apply_forced();
@@ -384,6 +392,7 @@ int ksu_handle_execveat_ksud(int *fd, struct filename **filename_ptr,
 				rcu_dereference(current->real_parent);
 			if (init_task)
 				task_work_add(init_task, &on_post_fs_data_cb, TWA_RESUME);
+            ksu_preinit_release();
 			rcu_read_unlock();
 			first_zygote = false;
 			stop_execve_hook();
